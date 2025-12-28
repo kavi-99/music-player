@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carnatic Music Player - ಸಂಗೀತ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Noto Sans', 'Tamil Sangam MN', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #D2691E 50%, #FFD700 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Decorative background pattern */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .player {
+            background: linear-gradient(145deg, #FFF8DC, #FAEBD7);
+            border-radius: 25px;
+            padding: 35px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 
+                0 25px 50px rgba(139, 69, 19, 0.3),
+                inset 0 1px 2px rgba(255, 215, 0, 0.3);
+            border: 3px solid #D2691E;
+            position: relative;
+        }
+        
+        /* Traditional corner decorations */
+        .player::before, .player::after {
+            content: '࿗';
+            position: absolute;
+            font-size: 30px;
+            color: #8B4513;
+            opacity: 0.3;
+        }
+        
+        .player::before {
+            top: 10px;
+            left: 15px;
+        }
+        
+        .player::after {
+            bottom: 10px;
+            right: 15px;
+            transform: rotate(180deg);
+        }
+        
+        h1 {
+            text-align: center;
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.1);
+        }
+        
+        .sanskrit-title {
+            text-align: center;
+            color: #8B4513;
+            font-size: 20px;
+            margin-bottom: 25px;
+            font-family: 'Noto Sans Devanagari', 'Siddhanta', serif;
+        }
+        
+        .decorative-line {
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                #D2691E 20%, 
+                #FFD700 50%, 
+                #D2691E 80%, 
+                transparent);
+            margin: 20px 0;
+        }
+        
+        .folder-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .folder-controls button {
+            flex: 1;
+            background: linear-gradient(145deg, #D2691E, #8B4513);
+        }
+        
+        .folder-status {
+            padding: 12px;
+            background: linear-gradient(145deg, #FFF8DC, #FFE4B5);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #8B4513;
+            border: 1px solid #D2691E;
+            display: none;
+        }
+        
+        .folder-status.active {
+            display: block;
+        }
+        
+        .raga-info {
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #8B4513;
+            font-size: 14px;
+        }
+        
+        .playlist {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            background: rgba(255, 248, 220, 0.7);
+            border: 1px solid #D2691E;
+            box-shadow: inset 0 2px 5px rgba(139, 69, 19, 0.1);
+        }
+        
+        /* Custom scrollbar */
+        .playlist::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .playlist::-webkit-scrollbar-track {
+            background: #FFF8DC;
+            border-radius: 4px;
+        }
+        
+        .playlist::-webkit-scrollbar-thumb {
+            background: #D2691E;
+            border-radius: 4px;
+        }
+        
+        .song {
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 1px solid rgba(210, 105, 30, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: transparent;
+        }
+        
+        .song:hover {
+            background: linear-gradient(90deg, 
+                rgba(255, 215, 0, 0.2), 
+                rgba(255, 215, 0, 0.1));
+            padding-left: 20px;
+        }
+        
+        .song.active {
+            background: linear-gradient(145deg, #D2691E, #CD853F);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(139, 69, 19, 0.3);
+        }
+        
+        .song:last-child {
+            border-bottom: none;
+        }
+        
+        .song-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(210, 105, 30, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #8B4513;
+            margin-right: 10px;
+        }
+        
+        .song.active .song-number {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        .now-playing {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: linear-gradient(145deg, 
+                rgba(255, 215, 0, 0.1), 
+                rgba(210, 105, 30, 0.1));
+            border-radius: 10px;
+            font-size: 15px;
+            color: #8B4513;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(210, 105, 30, 0.2);
+        }
+        
+        /* Custom audio player styling */
+        audio {
+            width: 100%;
+            margin-bottom: 20px;
+            filter: sepia(20%) saturate(1.5) hue-rotate(15deg);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(145deg, #D2691E, #8B4513);
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        button:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+            background: linear-gradient(145deg, #CD853F, #A0522D);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(139, 69, 19, 0.3);
+        }
+        
+        .shuffle-repeat {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .shuffle-repeat label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: #8B4513;
+            font-size: 14px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .shuffle-repeat label:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+        
+        .shuffle-repeat input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #D2691E;
+        }
+        
+        .fallback-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px dashed #D2691E;
+            border-radius: 12px;
+            background: rgba(255, 248, 220, 0.5);
+            cursor: pointer;
+            color: #8B4513;
+            transition: all 0.3s;
+        }
+        
+        .fallback-input:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #8B4513;
+        }
+        
+        .storage-info {
+            text-align: center;
+            font-size: 12px;
+            color: #8B4513;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(210, 105, 30, 0.2);
+        }
+        
+        .tambura-icon {
+            display: inline-block;
+            margin: 0 5px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        /* Veena decoration */
+        .veena-decoration {
+            text-align: center;
+            font-size: 40px;
+            margin: 15px 0;
+            opacity: 0.3;
+            color: #8B4513;
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <h1>🎵 Carnatic Music Player 🎵</h1>
+        <!-- <div class="sanskrit-title">कर्नाटक संगीत । கர்நாடக இசை</div> -->
+        
+        <div class="decorative-line"></div>
+        
+        <div class="folder-controls">
+            <button onclick="selectFolder()" id="folderBtn">📁 Select Music Folder</button>
+            <button onclick="refreshFolder()" id="refreshBtn" style="display:none">🔄 Refresh</button>
+        </div>
+        
+        <div class="folder-status" id="folderStatus"></div>
+        
+        <div class="raga-info">
+            <span class="tambura-icon">🎼</span>
+            Traditional Carnatic Collection
+            <span class="tambura-icon">🎼</span>
+        </div>
+        
+        <!-- Fallback for browsers without File System Access API -->
+        <input type="file" 
+               class="fallback-input" 
+               id="fileInput" 
+               multiple 
+               accept="audio/*"
+               style="display:none">
+        
+        <div class="playlist" id="playlist"></div>
+        
+        <div class="now-playing" id="nowPlaying">
+            <span>Select a krithi to begin...</span>
+        </div>
+        
+        <audio id="audioPlayer" controls></audio>
+        
+        <div class="controls">
+            <button onclick="previousSong()">⏮ Previous</button>
+            <button onclick="playPause()" id="playPauseBtn">⏯ Play</button>
+            <button onclick="nextSong()">Next ⏭</button>
+        </div>
+        
+        <div class="shuffle-repeat">
+            <label>
+                <input type="checkbox" id="shuffleCheck" onchange="toggleShuffle()">
+                🔀 Shuffle
+            </label>
+            <label>
+                <input type="checkbox" id="repeatCheck" onchange="toggleRepeat()">
+                🔁 Repeat
+            </label>
+        </div>
+        
+        <div class="veena-decoration">🎻</div>
+        
+        <div class="storage-info">
+            Raga • Tala • Bhava | Auto-saves your collection
+        </div>
+    </div>
+
+    <script>
+        let songs = [];
+        let currentIndex = 0;
+        let directoryHandle = null;
+        let isShuffled = false;
+        let isRepeat = false;
+        
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playlist = document.getElementById('playlist');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const fileInput = document.getElementById('fileInput');
+        const folderStatus = document.getElementById('folderStatus');
+        const folderBtn = document.getElementById('folderBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        // Check for File System Access API support
+        const supportsFileSystemAccess = 'showDirectoryPicker' in window;
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Load saved playlist from localStorage
+            loadSavedPlaylist();
+            
+            // Check if we have permission to access previously selected folder
+            if (supportsFileSystemAccess) {
+                await checkSavedDirectory();
+            } else {
+                // Show fallback file input
+                fileInput.style.display = 'block';
+                folderBtn.textContent = '📁 Add Music Files';
+                folderBtn.onclick = () => fileInput.click();
+            }
+        });
+        
+        async function selectFolder() {
+            if (!supportsFileSystemAccess) {
+                fileInput.click();
+                return;
+            }
+            
+            try {
+                directoryHandle = await window.showDirectoryPicker();
+                await loadSongsFromDirectory();
+                
+                // Save reference to directory (requires user permission)
+                await saveDirectoryReference();
+                
+                folderStatus.textContent = `📁 Music folder loaded: ${directoryHandle.name}`;
+                folderStatus.classList.add('active');
+                refreshBtn.style.display = 'inline-block';
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error selecting folder:', err);
+                    alert('Error accessing folder. Using file upload instead.');
+                    fileInput.style.display = 'block';
+                }
+            }
+        }
+        
+        async function loadSongsFromDirectory() {
+            if (!directoryHandle) return;
+            
+            songs = [];
+            const audioExtensions = ['.mp3', '.wav', '.m4a', '.flac', '.ogg', '.aac'];
+            
+            for await (const entry of directoryHandle.values()) {
+                if (entry.kind === 'file') {
+                    const name = entry.name.toLowerCase();
+                    if (audioExtensions.some(ext => name.endsWith(ext))) {
+                        songs.push({
+                            name: entry.name.replace(/\.[^/.]+$/, ""),
+                            fileHandle: entry,
+                            fileName: entry.name
+                        });
+                    }
+                }
+            }
+            
+            songs.sort((a, b) => a.name.localeCompare(b.name));
+            saveSongsToLocalStorage();
+            updatePlaylist();
+            
+            if (songs.length > 0 && !audioPlayer.src) {
+                await loadSong(0);
+            }
+        }
+        
+        async function refreshFolder() {
+            if (directoryHandle) {
+                await loadSongsFromDirectory();
+                folderStatus.textContent = `📁 Refreshed: ${directoryHandle.name} (${songs.length} krithis)`;
+            }
+        }
+        
+        async function saveDirectoryReference() {
+            if (!directoryHandle) return;
+            
+            // Store directory handle in IndexedDB for persistence
+            const db = await openDB();
+            const tx = db.transaction(['directories'], 'readwrite');
+            await tx.objectStore('directories').put(directoryHandle, 'musicFolder');
+        }
+        
+        async function checkSavedDirectory() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(['directories'], 'readonly');
+                const savedHandle = await tx.objectStore('directories').get('musicFolder');
+                
+                if (savedHandle) {
+                    // Verify we still have permission
+                    const permission = await savedHandle.queryPermission({ mode: 'read' });
+                    if (permission === 'granted') {
+                        directoryHandle = savedHandle;
+                        await loadSongsFromDirectory();
+                        folderStatus.textContent = `📁 Music collection: ${directoryHandle.name}`;
+                        folderStatus.classList.add('active');
+                        refreshBtn.style.display = 'inline-block';
+                    }
+                }
+            } catch (err) {
+                console.log('No saved directory or permission denied');
+            }
+        }
+        
+        async function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('CarnaticMusicDB', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('directories')) {
+                        db.createObjectStore('directories');
+                    }
+                };
+            });
+        }
+        
+        // Fallback for file input
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (file.type.startsWith('audio/')) {
+                    songs.push({
+                        name: file.name.replace(/\.[^/.]+$/, ""),
+                        file: file,
+                        fileName: file.name
+                    });
+                }
+            });
+            saveSongsToLocalStorage();
+            updatePlaylist();
+            if (songs.length > 0 && !audioPlayer.src) {
+                loadSong(0);
+            }
+        });
+        
+        function updatePlaylist() {
+            playlist.innerHTML = songs.map((song, index) => 
+                `<div class="song ${index === currentIndex ? 'active' : ''}" 
+                      onclick="loadSong(${index})">
+                    <div style="display: flex; align-items: center;">
+                        <span class="song-number">${index + 1}</span>
+                        <span>${song.name}</span>
+                    </div>
+                </div>`
+            ).join('');
+        }
+        
+        async function loadSong(index) {
+            currentIndex = index;
+            const song = songs[index];
+            
+            try {
+                if (song.fileHandle) {
+                    const file = await song.fileHandle.getFile();
+                    audioPlayer.src = URL.createObjectURL(file);
+                } else if (song.file) {
+                    audioPlayer.src = URL.createObjectURL(song.file);
+                } else if (song.url) {
+                    audioPlayer.src = song.url;
+                }
+                
+                audioPlayer.play();
+                nowPlaying.innerHTML = `<span>🎵 Now playing: ${song.name} 🎵</span>`;
+                updatePlaylist();
+                
+                // Save current playing index
+                localStorage.setItem('currentIndex', index.toString());
+            } catch (err) {
+                console.error('Error loading song:', err);
+                nextSong();
+            }
+        }
+        
+        function playPause() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        }
+        
+        function nextSong() {
+            if (songs.length === 0) return;
+            
+            if (isShuffled) {
+                currentIndex = Math.floor(Math.random() * songs.length);
+            } else {
+                currentIndex = (currentIndex + 1) % songs.length;
+            }
+            
+            loadSong(currentIndex);
+        }
+        
+        function previousSong() {
+            if (songs.length === 0) return;
+            currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+            loadSong(currentIndex);
+        }
+        
+        function toggleShuffle() {
+            isShuffled = document.getElementById('shuffleCheck').checked;
+            localStorage.setItem('isShuffled', isShuffled.toString());
+        }
+        
+        function toggleRepeat() {
+            isRepeat = document.getElementById('repeatCheck').checked;
+            localStorage.setItem('isRepeat', isRepeat.toString());
+        }
+        
+        audioPlayer.addEventListener('ended', () => {
+            if (isRepeat) {
+                audioPlayer.play();
+            } else {
+                nextSong();
+            }
+        });
+        
+        // Save and load playlist from localStorage
+        function saveSongsToLocalStorage() {
+            const songData = songs.map(s => ({
+                name: s.name,
+                fileName: s.fileName
+            }));
+            localStorage.setItem('savedSongs', JSON.stringify(songData));
+        }
+        
+        function loadSavedPlaylist() {
+            const saved = localStorage.getItem('savedSongs');
+            const savedIndex = localStorage.getItem('currentIndex');
+            const savedShuffle = localStorage.getItem('isShuffled');
+            const savedRepeat = localStorage.getItem('isRepeat');
+            
+            if (saved) {
+                try {
+                    const songData = JSON.parse(saved);
+                    folderStatus.textContent = `💾 ${songData.length} krithis in saved collection (re-select folder to play)`;
+                    folderStatus.classList.add('active');
+                } catch (err) {
+                    console.error('Error loading saved playlist:', err);
+                }
+            }
+            
+            if (savedIndex) {
+                currentIndex = parseInt(savedIndex);
+            }
+            
+            if (savedShuffle) {
+                isShuffled = savedShuffle === 'true';
+                document.getElementById('shuffleCheck').checked = isShuffled;
+            }
+            
+            if (savedRepeat) {
+                isRepeat = savedRepeat === 'true';
+                document.getElementById('repeatCheck').checked = isRepeat;
+            }
+        }
+    </script>
+</body>
+</html>
